@@ -244,22 +244,23 @@ def run_tests():
     assert soup.find("div", id="drawer-backdrop") is not None, "Missing #drawer-backdrop"
 
     expected_views = [
+        "view-stories",
         "view-how-to-answer",
-        "view-live-demo",
         "view-slides",
         "view-defects-radar",
         "view-dossiers",
-        "view-stories",
         "view-vault",
         "view-architecture",
-        "view-runbook",
+        "view-team",
     ]
     nav_tabs = sidebar.find_all("button", class_="nav-tab")
     tab_views = [t.get("data-view") for t in nav_tabs]
     for ev in expected_views:
         assert ev in tab_views, f"Missing nav tab for view: {ev}"
         assert soup.find("div", id=ev) is not None, f"Missing view panel: #{ev}"
-    print(f"PASS: Hamburger side drawer and all {len(expected_views)} focused view panels verified")
+    assert soup.find("div", id="view-live-demo") is None, "view-live-demo must be removed"
+    assert soup.find("div", id="view-runbook") is None, "view-runbook must be removed"
+    print(f"PASS: Hamburger side drawer and all {len(expected_views)} focused view panels verified (live-demo and runbook removed)")
 
     # 15. Contextual Per-Section Search Bars
     story_search = soup.find("input", id="story-search-input")
@@ -335,16 +336,17 @@ def run_tests():
     # 21. Section Nesting & View Isolation (No Footer Leaks)
     sec_overview = soup.find("section", id="overview")
     assert sec_overview.find("div", id="view-how-to-answer") is not None
-    assert sec_overview.find("div", id="view-runbook") is None, "view-runbook must not be in overview"
+    assert sec_overview.find("div", id="view-team") is None, "view-team must not be in overview"
 
     sec_details = soup.find("section", id="details")
-    for v in ["view-live-demo", "view-slides", "view-defects-radar", "view-dossiers", "view-stories", "view-vault", "view-architecture"]:
+    for v in ["view-slides", "view-defects-radar", "view-dossiers", "view-stories", "view-vault", "view-architecture"]:
         assert sec_details.find("div", id=v) is not None, f"#{v} missing from section #details"
+    assert sec_details.find("div", id="view-live-demo") is None, "view-live-demo must not be in #details"
 
     sec_next_steps = soup.find("section", id="next-steps")
-    runbook_view = sec_next_steps.find("div", id="view-runbook")
-    assert runbook_view is not None, "view-runbook must be inside #next-steps"
-    assert runbook_view.find("div", class_="team-grid") is not None, ".team-grid must be inside view-runbook"
+    team_view = sec_next_steps.find("div", id="view-team")
+    assert team_view is not None, "view-team must be inside #next-steps"
+    assert team_view.find("div", class_="team-grid") is not None, ".team-grid must be inside view-team"
     print("PASS: Section nesting and view isolation verified (zero footer leakage across views)")
 
     # 22. Production Credentials Drawer Verification
@@ -427,6 +429,11 @@ def run_tests():
         for case in test_cases:
             assert case.find("a", href=re.compile(r"docs/testing/cases/E\d+\.md#tc")), f"{sid}: test case lacks canonical anchor"
             assert "Expected outcome:" in case.text and "Justification:" in case.text, f"{sid}: incomplete test reasoning"
+            # Verify IS212 lecture-aligned defenses
+            assert case.find("div", class_="tc-defense-box") is not None, f"{sid}: missing tc-defense-box"
+            assert "Why We Chose This Test" in case.text, f"{sid}: missing Why We Chose This Test defense"
+            assert "What Would Have to Be Broken to Fail" in case.text, f"{sid}: missing What Would Have to Be Broken to Fail"
+            assert case.find("span", class_="badge-tc-cat") is not None, f"{sid}: missing badge-tc-cat"
 
         # Step 6: Presentation Slide Anchor (1-17)
         p6 = proto.find("div", id=f"demo-p6-{sid}")
@@ -476,8 +483,8 @@ def run_tests():
     print("PASS: Document strictly contains zero duplicate IDs across all elements")
 
     # 26. Team Accountability, ADR-012 Roles, Lifecycle FSM & 11-Step Publication Gap
-    team_grid = runbook_view.find("div", class_="team-grid")
-    assert team_grid is not None, "Missing .team-grid in runbook view"
+    team_grid = team_view.find("div", class_="team-grid")
+    assert team_grid is not None, "Missing .team-grid in team view"
     member_cards = team_grid.find_all("div", class_="team-member-card")
     assert len(member_cards) == 6, f"Expected 6 team member cards, got {len(member_cards)}"
     member_names = [mc.find(class_="member-name").text.strip() for mc in member_cards]
@@ -513,6 +520,23 @@ def run_tests():
     assert "console command" in gap_callout.text.lower() or "console" in gap_callout.text.lower(), "Missing console publication gap step"
     assert "Discover" in gap_callout.text, "Missing Attendee Discover final step"
     print("PASS: Team Accountability, ADR-012 Roles, Lifecycle FSM & 11-Step Publication Gap verified")
+
+    # 27. Live Production Event Inventory Table across all 6 Lifecycle Stages
+    inventory_table = soup.find("table", class_="inventory-table")
+    assert inventory_table is not None, "Missing .inventory-table"
+    inv_text = inventory_table.text
+    for stage in ["Draft", "Submitted", "Approved", "Planning", "Confirmed & Published", "Completed"]:
+        assert stage in inv_text, f"Missing lifecycle stage in inventory table: {stage}"
+    for uuid in [
+        "1d0bf88e-549b-5f1a-8e64-9c74676ece6d",
+        "0ab5d517-ba10-403e-86c3-dfd42a32d9c2",
+        "323975af-b348-5320-8716-a1100a9e74c3",
+        "dedbc3b8-2e27-49eb-8c04-937d8a251f1f",
+        "cdb08805-cd9d-4b27-ae8e-7e7c5f84277f",
+        "f5dcd83e-32e2-54d9-8b7a-4ba9e12cadb3",
+    ]:
+        assert uuid in inv_text, f"Missing event UUID in inventory table: {uuid}"
+    print("PASS: Live Production Event Inventory across all 6 lifecycle stages verified")
 
     print("\nALL VERIFICATION CHECKS PASSED SUCCESSFULLY.")
 

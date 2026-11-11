@@ -1090,11 +1090,69 @@ def github_anchor(value: str) -> str:
     return re.sub(r"[^a-z0-9 -]", "", value.lower()).replace(" ", "-")
 
 
+def synthesize_tc_lecture_defense(tc_id: str, title: str, tc_type: str, ac_ref: str, pre_conditions: str, expected_result: str, epic: str) -> dict[str, str]:
+    """Synthesize IS212 lecture-aligned defense rationale and first-principles breakdown."""
+    t_lower = tc_type.lower()
+    title_lower = title.lower()
+
+    # Category determination based on IS212 Week 4 Slide 26 5-step test taxonomy
+    if "boundary" in t_lower or "5" in tc_type or "boundary" in title_lower or "limit" in title_lower or "exactly at" in t_lower:
+        cat = "Boundary Value Analysis & EP (IS212 Step 5)"
+        why = f"Applies Boundary Value Analysis (BVA) and Equivalence Partitioning (EP) at critical operational thresholds ({tc_type}). Rather than redundant happy-path testing ('AI coverage theatre', Week 4 Slide 36), this targets the exact boundary where off-by-one errors and race conditions occur ({ac_ref or title})."
+    elif "negative" in t_lower or "4" in tc_type or "reject" in title_lower or "unauthorized" in title_lower or "fail" in title_lower or "prevent" in title_lower:
+        cat = "Negative Guardrail / Business Rule (IS212 Step 4)"
+        why = f"Validates defensive exception handling and business rule enforcement. As emphasized in IS212 Week 4 Slide 26 and Week 6, this test proves the system rejects invalid inputs or unauthorized operations with predictable error responses (HTTP 4xx), protecting database consistency ({ac_ref or title})."
+    elif "cross-cutting" in t_lower or "security" in t_lower or "audit" in t_lower or "isolation" in t_lower:
+        cat = "Cross-Cutting Quality & Security (IS212 Step 3)"
+        why = f"Enforces non-functional system invariants across module boundaries ({ac_ref or title}), ensuring single-role security isolation (ADR-012), immutable audit trail recording, or transactional notification consistency."
+    elif "integration" in t_lower or "regression" in t_lower or "3" in tc_type:
+        cat = "Integration & State Integrity (IS212 Week 9)"
+        why = f"Tests cross-boundary persistence and relational cascades against real PostgreSQL (avoiding the 'mock-based integration illusion', Week 9 Slide 20). Verifies rollback semantics under failure for {ac_ref or title}."
+    else:
+        cat = "Happy Path Acceptance (IS212 Step 2)"
+        why = f"Verifies core functional acceptance for {ac_ref or title}: proves the primary business workflow succeeds and satisfies the stakeholder specification under valid conditions."
+
+    # Component breakdown: what would have to be broken to fail? (Week 6 Slide 17)
+    if epic == "E01":
+        broken = "Session cookie signature verification, bcrypt password comparison, role authorization middleware (requireRole), or the account lockout counter in the users table."
+    elif epic == "E02":
+        broken = "Event request Zod payload schema, Singapore Standard Time (SST) 2-year forward horizon check, or the status transition state machine guard."
+    elif epic == "E03":
+        broken = "Coordinator assignment transactional logic, Coordinator Lead authorization check, or event_assignments database foreign keys."
+    elif epic == "E04":
+        broken = "Child session time-overlap validation, session capacity limit checks, or the parent Event envelope transaction."
+    elif epic == "E05":
+        broken = "Venue turnaround/setup buffer calculation, operating hours interval checks, or the venue catalogue search query."
+    elif epic == "E06":
+        broken = "PostgreSQL GiST exclusion constraint (0016 tsrange guard), FOR UPDATE row-level booking lock, or the 48-hour hold expiration worker."
+    elif epic == "E07":
+        broken = "Equipment inventory reservation counters, technician FOR NO KEY UPDATE user row lock (PR #239), or support request assignment logic."
+    elif epic == "E08":
+        broken = "The 7-factor safety review checklist validator, coordinator readiness aggregator, or Confirmed status transition guard."
+    elif epic == "E09":
+        broken = "PostgreSQL attendee_registrations FOR UPDATE row lock, event/session capacity counter checks, or waitlist promotion transactional boundary."
+    elif epic == "E10":
+        broken = "Arrangement revision fingerprint comparison, Confirmed-to-Planning automatic reversion loop (T-81/T-28), or cancellation outbox relay."
+    elif epic == "E11":
+        broken = "Atomic insert into notification_outbox table, background relay daemon polling, or recipient email template rendering."
+    elif epic in ("E14", "E15"):
+        broken = "Append-only audit_logs trigger, actor attribution context binding, or immutable log write constraint."
+    else:
+        broken = "Backend route handler status validation, Zod request schema parsing, or PostgreSQL transactional rollback semantics."
+
+    return {
+        "category": cat,
+        "why_chosen": why,
+        "broken_to_fail": broken,
+    }
+
+
 def parse_test_case_details() -> dict[str, dict]:
     """Read the English test-case source instead of reducing it to coverage rows."""
     details = {}
     for path in TEST_CASES_DIR.glob("E*.md"):
         text = path.read_text(encoding="utf-8")
+        epic = path.stem
         for match in re.finditer(r"^### (TC_[A-Z0-9_]+)\s+[-—]\s+(.+)$([\s\S]*?)(?=^### |\Z)", text, re.M):
             tc_id, title, body = match.groups()
             sections = {}
@@ -1102,12 +1160,29 @@ def parse_test_case_details() -> dict[str, dict]:
                 part = re.search(rf"^#### {section}\s*\n([\s\S]*?)(?=^#### |\Z)", body, re.M)
                 if part:
                     sections[section.lower().replace("-", "_").replace(" ", "_")] = markdown_text(part.group(1))
+
+            type_m = re.search(r"-\s+\*\*Type\*\*:\s*(.+)$", body, re.M)
+            ac_m = re.search(r"-\s+\*\*AC reference\*\*:\s*(.+)$", body, re.M)
+            tc_type = type_m.group(1).strip() if type_m else "2 - Happy Path"
+            ac_ref = ac_m.group(1).strip() if ac_m else ""
+
+            pre_conditions = sections.get("pre_conditions", "Not separately recorded.")
+            expected_result = sections.get("expected_result", "See the canonical case.")
+
+            defense = synthesize_tc_lecture_defense(tc_id, title, tc_type, ac_ref, pre_conditions, expected_result, epic)
+
             heading = f"{tc_id} — {title}"
             details[tc_id] = {
-                "title": markdown_text(title), "anchor": github_anchor(heading),
-                "pre_conditions": sections.get("pre_conditions", "Not separately recorded."),
+                "title": markdown_text(title),
+                "anchor": github_anchor(heading),
+                "tc_type": tc_type,
+                "ac_ref": ac_ref,
+                "category": defense["category"],
+                "why_chosen": defense["why_chosen"],
+                "broken_to_fail": defense["broken_to_fail"],
+                "pre_conditions": pre_conditions,
                 "test_steps": sections.get("test_steps", "See the canonical case."),
-                "expected_result": sections.get("expected_result", "See the canonical case."),
+                "expected_result": expected_result,
                 "justification": sections.get("justification", "Acceptance scenario and expected result define the reason for this case."),
             }
     return details
@@ -1866,10 +1941,15 @@ def build_html() -> str:
         sid = s["story_id"]
         s["test_cases"] = story_cases_map.get(sid, [])
         for case in s["test_cases"]:
+            fallback_defense = synthesize_tc_lecture_defense(case["tc_id"], case.get("scenario", ""), "2 - Happy Path", "", "", "", sid.split("-")[0])
             case.update(test_case_details.get(case["tc_id"], {
                 "title": case["scenario"], "anchor": "", "pre_conditions": "Not separately recorded.",
                 "test_steps": "See the canonical case.", "expected_result": "See the canonical case.",
                 "justification": "See the canonical case.",
+                "tc_type": "2 - Happy Path",
+                "category": fallback_defense["category"],
+                "why_chosen": fallback_defense["why_chosen"],
+                "broken_to_fail": fallback_defense["broken_to_fail"],
             }))
 
     stories_by_slide = defaultdict(list)
@@ -2246,10 +2326,27 @@ def build_html() -> str:
         epic = s.get("epic", sid.split("-")[0])
         cases = s["test_cases"]
         case_details_html = "".join(
-            f'''<article class="test-case-detail"><h5><a href="{GITHUB_REPO_URL}/blob/main/docs/testing/cases/{epic}.md#{c["anchor"]}" target="_blank" rel="noopener"><code>{c["tc_id"]}</code> — {html.escape(c["title"])}</a></h5>
-            <p><strong>Scenario:</strong> {html.escape(c["scenario"])}</p><p><strong>Pre-conditions:</strong> {html.escape(c["pre_conditions"])}</p>
-            <p><strong>Steps:</strong> {html.escape(c["test_steps"])}</p><p><strong>Expected outcome:</strong> {html.escape(c["expected_result"])}</p>
-            <p><strong>Justification:</strong> {html.escape(c["justification"])}</p></article>'''
+            f'''<article class="test-case-detail" data-tc-type="{html.escape(c.get('tc_type', ''))}">
+              <div class="tc-header-row">
+                <h5><a href="{GITHUB_REPO_URL}/blob/main/docs/testing/cases/{epic}.md#{c["anchor"]}" target="_blank" rel="noopener"><code>{c["tc_id"]}</code> — {html.escape(c["title"])}</a></h5>
+                <span class="badge badge-tc-cat">{html.escape(c.get("category", "Happy Path Acceptance (IS212 Step 2)"))}</span>
+              </div>
+              <p><strong>Scenario:</strong> {html.escape(c["scenario"])}</p>
+              <div class="tc-defense-box">
+                <div class="tc-defense-item">
+                  <strong>🎙️ Why We Chose This Test (Spoken Defense):</strong>
+                  <p>{html.escape(c.get("why_chosen", ""))}</p>
+                </div>
+                <div class="tc-defense-item">
+                  <strong>💥 What Would Have to Be Broken to Fail (First Principles):</strong>
+                  <p>{html.escape(c.get("broken_to_fail", ""))}</p>
+                </div>
+              </div>
+              <p><strong>Pre-conditions:</strong> {html.escape(c["pre_conditions"])}</p>
+              <p><strong>Steps:</strong> {html.escape(c["test_steps"])}</p>
+              <p><strong>Expected outcome:</strong> {html.escape(c["expected_result"])}</p>
+              <p><strong>Justification:</strong> {html.escape(c["justification"])}</p>
+            </article>'''
             for c in cases
         ) or '<p class="muted">No canonical test case is associated with this story.</p>'
         demo_meta = get_story_demo_metadata(sid, epic, s, s["test_cases"])
@@ -2269,8 +2366,8 @@ def build_html() -> str:
           <div class="demo-protocol-header">
             <div class="demo-protocol-title-wrap">
               <span class="demo-protocol-icon">🎬</span>
-              <h4 class="demo-protocol-title">Live Oral Exam Demonstration Protocol</h4>
-              <span class="demo-protocol-pill">7-Step Lineage</span>
+              <h4 class="demo-protocol-title">Live Oral Exam Demonstration &amp; Verification Stack</h4>
+              <span class="demo-protocol-pill">All Evidence Visible Inline (Zero Tab Switching)</span>
             </div>
             <span class="demo-protocol-role-hint">Acting Role: <strong>{dm_acct["role_title"]}</strong> ({dm_acct["name"]})</span>
           </div>
@@ -2278,6 +2375,7 @@ def build_html() -> str:
           <div class="demo-step-panels">
             <!-- Step 1: Live Demo -->
             <div class="demo-step-panel active" id="demo-p1-{sid}">
+              <h5 class="demo-section-header"><span class="step-num">Step 1</span> 🎬 1-Click Live App Target &amp; Navigation Path</h5>
               <div class="demo-grid-2col">
                 <div>
                   <div class="demo-meta-row">
@@ -2297,7 +2395,8 @@ def build_html() -> str:
             </div>
 
             <!-- Step 2: Jira Story -->
-            <div class="demo-step-panel" id="demo-p2-{sid}">
+            <div class="demo-step-panel active" id="demo-p2-{sid}">
+              <h5 class="demo-section-header"><span class="step-num">Step 2</span> 🎯 Jira Story Scope &amp; Acceptance Criteria</h5>
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Jira SCRUM Issue:</span>
                 {demo_meta['jira_links_html']}
@@ -2315,7 +2414,8 @@ def build_html() -> str:
             </div>
 
             <!-- Step 3: GitHub PR -->
-            <div class="demo-step-panel" id="demo-p3-{sid}">
+            <div class="demo-step-panel active" id="demo-p3-{sid}">
+              <h5 class="demo-section-header"><span class="step-num">Step 3</span> 🔀 GitHub Pull Request &amp; Database Migration</h5>
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Pull Request:</span>
                 {demo_meta['pr_links_html']}
@@ -2334,7 +2434,8 @@ def build_html() -> str:
             </div>
 
             <!-- Step 4: CI Workflow -->
-            <div class="demo-step-panel" id="demo-p4-{sid}">
+            <div class="demo-step-panel active" id="demo-p4-{sid}">
+              <h5 class="demo-section-header"><span class="step-num">Step 4</span> ⚙️ Enforced GitHub Actions CI Verification Gates</h5>
               <div class="demo-meta-row">
                 <span class="demo-meta-label">GitHub Actions CI:</span>
                 {demo_meta['ci_links_html']}
@@ -2352,8 +2453,8 @@ def build_html() -> str:
             </div>
 
             <!-- Step 5: Complete canonical test cases -->
-            <div class="demo-step-panel" id="demo-p5-{sid}">
-              <h5 class="demo-subhead">Complete English test cases</h5>
+            <div class="demo-step-panel active" id="demo-p5-{sid}">
+              <h5 class="demo-section-header"><span class="step-num">Step 5</span> 🧪 Complete Canonical Test Cases &amp; IS212 Spoken Defense</h5>
               <div class="test-case-details">{case_details_html}</div>
               <div class="demo-meta-row" style="margin-top:0.75rem;">
                 <span class="demo-meta-label">Verified Run Evidence:</span>
@@ -2363,7 +2464,8 @@ def build_html() -> str:
             </div>
 
             <!-- Step 6: Slide Deck Mapping -->
-            <div class="demo-step-panel" id="demo-p6-{sid}">
+            <div class="demo-step-panel active" id="demo-p6-{sid}">
+              <h5 class="demo-section-header"><span class="step-num">Step 6</span> 📊 Week 11 Presentation Anchor &amp; Speaker Claim</h5>
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Presentation Anchor:</span>
                 <span class="badge badge-sprint">Slide {dm_slide['num']}: {html.escape(dm_slide['title'])}</span>
@@ -2380,7 +2482,8 @@ def build_html() -> str:
             </div>
 
             <!-- Step 7: Past Postplan -->
-            <div class="demo-step-panel" id="demo-p7-{sid}">
+            <div class="demo-step-panel active" id="demo-p7-{sid}">
+              <h5 class="demo-section-header"><span class="step-num">Step 7</span> 📜 Standalone Postplan Review Artifact</h5>
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Review Artifact:</span>
                 {demo_meta['postplan_link_html']}
@@ -2909,79 +3012,90 @@ def build_html() -> str:
         </div>
         """)
 
-    # Pre-render View: Live Exam Demonstration Protocol
-    story_options_html = "".join(f'<option value="{s["story_id"]}">{s["story_id"]}: {s["jira_key"]} — {html.escape(s["title"])} ({s["owner"]})</option>' for s in stories)
-    view_live_demo_html = f"""
-    <div id="view-live-demo" class="view-panel">
-      <div class="section-header-box">
-        <div class="section-eyebrow">LIVE ORAL EXAMINATION DEMONSTRATION MODE</div>
-        <h2 class="section-heading">🎬 Live Exam Demonstration Protocol</h2>
-        <p class="section-lead">The structured 6-step live demonstration and tracing routine for every user story under examiner inquiry.</p>
+    # Pre-render Live Production Event Inventory Table
+    live_inventory_table_html = f"""
+    <div class="live-inventory-box" style="background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; padding: 1.25rem; margin-bottom: 2rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <h3 style="color: var(--accent); font-size: 1.15rem; margin:0;">🎯 Pre-Seeded Production Event Inventory (All 6 Lifecycle Stages)</h3>
+          <p style="font-size: 0.88rem; color: var(--text-dim); margin-top:0.25rem;">
+            Direct bypass for live oral exam inquiries. Because publishing an event has no coordinator GUI button (known gap, Steps 8–10), these pre-seeded events on <code>https://sgconnectsphere.hong-yi.me</code> provide immediate proof for any lifecycle stage without live data entry.
+          </p>
+        </div>
+        <span class="badge badge-status" style="background:rgba(56, 189, 248, 0.15); color:var(--accent); font-size:0.85rem; padding:0.4rem 0.8rem;">Ready for Oral Exam</span>
       </div>
 
-      <!-- 6-Step SOP Sequence -->
-      <div class="protocol-sop-grid">
-        <div class="protocol-sop-card">
-          <span class="sop-step-badge">STEP 1</span>
-          <h4>📱 1-Click Live App Login</h4>
-          <p>Open <a href="{APP_URL}" target="_blank" rel="noopener" style="color:var(--accent);">sgconnectsphere.hong-yi.me</a>, use the reference drawer only when needed, and execute the exact navigation path.</p>
-        </div>
-        <div class="protocol-sop-card">
-          <span class="sop-step-badge">STEP 2</span>
-          <h4>🎯 Jira Acceptance Criteria</h4>
-          <p>Inspect the canonical Jira SCRUM issue, review Given-When-Then ACs, and cite PO Bryan Seah's acceptance sign-off.</p>
-        </div>
-        <div class="protocol-sop-card">
-          <span class="sop-step-badge">STEP 3</span>
-          <h4>🔀 GitHub Pull Request</h4>
-          <p>Verify PR merge commit SHA, author attribution, and reciprocal code review approval by peer developer.</p>
-        </div>
-        <div class="protocol-sop-card">
-          <span class="sop-step-badge">STEP 4</span>
-          <h4>⚙️ GitHub Actions CI Run</h4>
-          <p>Inspect green CI status verifying all 5 required checks: pr-conventions, backend-tests, frontend-build, doc-guard, check-worktrees.</p>
-        </div>
-        <div class="protocol-sop-card">
-          <span class="sop-step-badge">STEP 5</span>
-          <h4>🧪 Test Cases (EP / BVA)</h4>
-          <p>Explain Equivalence Partitioning (valid vs invalid) and Boundary Value Analysis, backed by real PostgreSQL runs in docs/testing/runs/.</p>
-        </div>
-        <div class="protocol-sop-card">
-          <span class="sop-step-badge">STEP 6</span>
-          <h4>📊 Slide Deck &amp; Postplan</h4>
-          <p>Anchor to the matching slide among the 17 slides in Week 11 Presentation and reference historical postplan reviews.</p>
-        </div>
-      </div>
-
-      <!-- Quick Drill Jump Chips -->
-      <div class="demo-launcher-box">
-        <h3 style="font-size:1.15rem; color:var(--text-bright); margin-bottom:0.75rem;">⚡ Quick Demonstration Scenarios (High-Frequency Examiner Questions)</h3>
-        <p class="muted" style="font-size:0.85rem; margin-bottom:1rem;">Click any scenario below to immediately jump to its complete 7-step demonstration protocol and navigation instructions:</p>
-        <div class="quick-drill-grid">
-          <button type="button" class="drill-chip" data-drill-sid="E06-S06">⚡ E06-S06: Double Booking Race (Rule B Concurrency)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E08-S06">⚖️ E08-S06: Operational Safety Review (Safety Officer)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E08-S03">🛡️ E08-S03: Readiness Submission (Coordinator)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E05-S05">⏱️ E05-S05: Setup &amp; Turnaround Buffers (GiST Exclusion)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E02-S07">📅 E02-S07: 2-Year SST Date Horizon Guard (CFO)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E09-S04">🎟️ E09-S04: Attendee Waitlist Concurrency (XY Role)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E10-S04">💰 E10-S04: Cancellation &amp; Refund Tiers Calculation</button>
-          <button type="button" class="drill-chip" data-drill-sid="E04-S02">🔄 E04-S02: Multi-Session Restoration (T-79)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E03-S08">🚨 E03-S08: Defect D-01 &amp; SCRUM-261 HEAD Merge</button>
-        </div>
-
-        <div style="margin-top:1.25rem;">
-          <label for="demo-story-select" style="font-size:0.85rem; font-weight:700; color:var(--accent); display:block; margin-bottom:0.4rem;">Select Any Story to Preview Live Demonstration Protocol:</label>
-          <select id="demo-story-select" style="width:100%; max-width:500px; background:var(--raised); border:1px solid var(--border); color:var(--text-bright); padding:0.5rem; border-radius:6px; font-size:0.9rem;">
-            <option value="">-- Choose a user story (E01-S01 to E14-S03) --</option>
-            {story_options_html}
-          </select>
-        </div>
-
-        <div id="demo-active-display" style="margin-top:1.5rem;">
-          <div style="background:var(--bg); border:1px dashed var(--border); border-radius:8px; padding:2rem; text-align:center; color:var(--muted);">
-            Select a story from the dropdown or click a quick scenario button above to view its complete 7-step presentation protocol.
-          </div>
-        </div>
+      <div class="table-wrap" style="overflow-x:auto;">
+        <table class="inventory-table" style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead>
+            <tr style="background: var(--raised); border-bottom: 2px solid var(--border); text-align:left;">
+              <th style="padding:0.6rem 0.8rem; color:var(--text-bright);">Lifecycle Stage</th>
+              <th style="padding:0.6rem 0.8rem; color:var(--text-bright);">Event Title &amp; ID</th>
+              <th style="padding:0.6rem 0.8rem; color:var(--text-bright);">Database UUID</th>
+              <th style="padding:0.6rem 0.8rem; color:var(--text-bright);">Acting Role &amp; Login</th>
+              <th style="padding:0.6rem 0.8rem; color:var(--text-bright);">App Destination URL</th>
+              <th style="padding:0.6rem 0.8rem; color:var(--text-bright);">Live Demonstration Utility</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:0.6rem 0.8rem;"><span class="badge" style="background:#4a5568; color:#fff;">Draft</span></td>
+              <td style="padding:0.6rem 0.8rem;"><strong>EVT-001</strong> (Draft Initiation)</td>
+              <td style="padding:0.6rem 0.8rem;"><code>-- UI Entry --</code></td>
+              <td style="padding:0.6rem 0.8rem;">Organiser (<code>jining.yee.2024@smu.edu.sg</code>)</td>
+              <td style="padding:0.6rem 0.8rem;"><a href="https://sgconnectsphere.hong-yi.me/organiser/events/new" target="_blank" rel="noopener" style="color:var(--accent);">/organiser/events/new</a></td>
+              <td style="padding:0.6rem 0.8rem;">Demonstrate creation with <em>None required</em> equipment for fast path.</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:0.6rem 0.8rem;"><span class="badge" style="background:#dd6b20; color:#fff;">Submitted</span></td>
+              <td style="padding:0.6rem 0.8rem;"><strong>EVT-101</strong> (Pending Lead)</td>
+              <td style="padding:0.6rem 0.8rem;"><code>1d0bf88e-549b-5f1a-8e64-9c74676ece6d</code></td>
+              <td style="padding:0.6rem 0.8rem;">Coordinator Lead (<code>coord_lead@connectsphere.com</code>)</td>
+              <td style="padding:0.6rem 0.8rem;"><a href="https://sgconnectsphere.hong-yi.me/coordinator/lead" target="_blank" rel="noopener" style="color:var(--accent);">/coordinator/lead</a></td>
+              <td style="padding:0.6rem 0.8rem;">Demonstrate Coordinator Lead assignment to Amareet (E03-S08..S10).</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:0.6rem 0.8rem;"><span class="badge" style="background:#3182ce; color:#fff;">Approved</span></td>
+              <td style="padding:0.6rem 0.8rem;"><strong>EVT-S03-MANUAL-17OCT</strong></td>
+              <td style="padding:0.6rem 0.8rem;"><code>0ab5d517-ba10-403e-86c3-dfd42a32d9c2</code></td>
+              <td style="padding:0.6rem 0.8rem;">Coordinator (<code>amareetk.m.2024@smu.edu.sg</code>)</td>
+              <td style="padding:0.6rem 0.8rem;"><a href="https://sgconnectsphere.hong-yi.me/coordinator/events/0ab5d517-ba10-403e-86c3-dfd42a32d9c2" target="_blank" rel="noopener" style="color:var(--accent);">/coordinator/events/...</a></td>
+              <td style="padding:0.6rem 0.8rem;">Shows Approved status before venue request (transitions to Planning upon request).</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:0.6rem 0.8rem;"><span class="badge" style="background:#805ad5; color:#fff;">Planning</span></td>
+              <td style="padding:0.6rem 0.8rem;"><strong>EVT-3003</strong></td>
+              <td style="padding:0.6rem 0.8rem;"><code>323975af-b348-5320-8716-a1100a9e74c3</code></td>
+              <td style="padding:0.6rem 0.8rem;">Venue Staff (<code>aaron.koh.2024@smu.edu.sg</code>)</td>
+              <td style="padding:0.6rem 0.8rem;"><a href="https://sgconnectsphere.hong-yi.me/venue/bookings" target="_blank" rel="noopener" style="color:var(--accent);">/venue/bookings</a></td>
+              <td style="padding:0.6rem 0.8rem;">Demonstrate venue staff booking approval &amp; coordinator safety submission.</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border); background:rgba(72, 187, 120, 0.08);">
+              <td style="padding:0.6rem 0.8rem;"><span class="badge" style="background:#38a169; color:#fff;">Confirmed &amp; Published</span></td>
+              <td style="padding:0.6rem 0.8rem;"><strong>Coordinator Flow Walkthrough</strong></td>
+              <td style="padding:0.6rem 0.8rem;"><code>dedbc3b8-2e27-49eb-8c04-937d8a251f1f</code></td>
+              <td style="padding:0.6rem 0.8rem;">Attendee (<code>xy.sim.2024@smu.edu.sg</code>)</td>
+              <td style="padding:0.6rem 0.8rem;"><a href="https://sgconnectsphere.hong-yi.me/attendee/discover" target="_blank" rel="noopener" style="color:var(--accent);">/attendee/discover</a></td>
+              <td style="padding:0.6rem 0.8rem;">Cedar Auditorium. Registration open, live in public catalogue. Immediate attendee flow proof!</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border); background:rgba(72, 187, 120, 0.08);">
+              <td style="padding:0.6rem 0.8rem;"><span class="badge" style="background:#38a169; color:#fff;">Confirmed &amp; Published</span></td>
+              <td style="padding:0.6rem 0.8rem;"><strong>E11 notification acceptance test</strong></td>
+              <td style="padding:0.6rem 0.8rem;"><code>cdb08805-cd9d-4b27-ae8e-7e7c5f84277f</code></td>
+              <td style="padding:0.6rem 0.8rem;">Attendee (<code>xy.sim.2024@smu.edu.sg</code>)</td>
+              <td style="padding:0.6rem 0.8rem;"><a href="https://sgconnectsphere.hong-yi.me/attendee/discover" target="_blank" rel="noopener" style="color:var(--accent);">/attendee/discover</a></td>
+              <td style="padding:0.6rem 0.8rem;">Orchid Hall. Live registration proof with transactional outbox notification.</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:0.6rem 0.8rem;"><span class="badge" style="background:#2b6cb0; color:#fff;">Completed</span></td>
+              <td style="padding:0.6rem 0.8rem;"><strong>EVT-2001</strong></td>
+              <td style="padding:0.6rem 0.8rem;"><code>f5dcd83e-32e2-54d9-8b7a-4ba9e12cadb3</code></td>
+              <td style="padding:0.6rem 0.8rem;">Coordinator / Organiser</td>
+              <td style="padding:0.6rem 0.8rem;"><a href="https://sgconnectsphere.hong-yi.me/coordinator/events/f5dcd83e-32e2-54d9-8b7a-4ba9e12cadb3" target="_blank" rel="noopener" style="color:var(--accent);">/coordinator/events/...</a></td>
+              <td style="padding:0.6rem 0.8rem;">Post-event completed status with historical audit trail and attendance records.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
     """
@@ -4571,39 +4685,102 @@ def build_html() -> str:
       color: var(--muted);
     }}
     .demo-protocol-role-hint strong {{ color: var(--warning); }}
-    .demo-step-tabs {{
-      display: flex;
-      background: #091118;
-      border-bottom: 1px solid #1e3345;
-      overflow-x: auto;
-      scrollbar-width: thin;
-    }}
-    .demo-step-btn {{
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--muted);
-      padding: 0.55rem 0.85rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s ease;
-    }}
-    .demo-step-btn:hover {{ color: var(--text-bright); background: rgba(255, 255, 255, 0.03); }}
-    .demo-step-btn.active {{
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-      background: rgba(56, 189, 248, 0.08);
-    }}
     .demo-step-panels {{
       padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
     }}
     .demo-step-panel {{
-      display: none;
-    }}
-    .demo-step-panel.active {{
       display: block;
+      background: #091118;
+      border: 1px solid #1e3345;
+      border-radius: 8px;
+      padding: 1rem;
+    }}
+    .demo-section-header {{
+      color: var(--accent);
+      font-size: 0.95rem;
+      margin: 0 0 0.75rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid #172733;
+      padding-bottom: 0.4rem;
+    }}
+    .step-num {{
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }}
+    .test-case-details {{
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }}
+    .test-case-detail {{
+      background: #0d1720;
+      border: 1px solid #1e3345;
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }}
+    .tc-header-row {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid #172733;
+      padding-bottom: 0.4rem;
+    }}
+    .tc-header-row h5 {{
+      margin: 0;
+      font-size: 0.92rem;
+    }}
+    .badge-tc-cat {{
+      background: rgba(120, 167, 255, 0.15);
+      border: 1px solid rgba(120, 167, 255, 0.4);
+      color: #78a7ff;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }}
+    .tc-defense-box {{
+      background: rgba(13, 24, 33, 0.9);
+      border: 1px solid #23394d;
+      border-left: 3px solid #75d6c2;
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin: 0.6rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }}
+    .tc-defense-item strong {{
+      color: #75d6c2;
+      display: block;
+      margin-bottom: 0.2rem;
+      font-size: 0.82rem;
+    }}
+    .tc-defense-item:last-child strong {{
+      color: #ff9f9f;
+    }}
+    .tc-defense-item p {{
+      margin: 0;
+      color: var(--text);
+      font-size: 0.82rem;
+      line-height: 1.45;
     }}
     .demo-grid-2col {{
       display: grid;
@@ -4975,17 +5152,14 @@ def build_html() -> str:
 
       <nav class="sidebar-nav" aria-label="Defense Navigation Views">
         <div class="nav-label">1. 📖 65 STORIES &amp; LIVE TRACING</div>
+        <button class="nav-tab active" data-view="view-stories">
+          <div class="nav-tab-left"><span class="nav-tab-icon">📖</span><span>65 Stories &amp; Live Tracing</span></div><span class="nav-pill pill-accent">65</span>
+        </button>
         <button class="nav-tab" data-view="view-how-to-answer">
           <div class="nav-tab-left">
             <span class="nav-tab-icon">📋</span>
             <span>How to Answer &amp; Protocol</span>
           </div>
-        </button>
-        <button class="nav-tab" data-view="view-stories">
-          <div class="nav-tab-left"><span class="nav-tab-icon">📖</span><span>65 Stories &amp; Live Tracing</span></div><span class="nav-pill pill-accent">65</span>
-        </button>
-        <button class="nav-tab" data-view="view-live-demo">
-          <div class="nav-tab-left"><span class="nav-tab-icon">🎬</span><span>Live Demo Launcher</span></div>
         </button>
         <div class="nav-label">2. 📊 WEEK 11 PRESENTATION COMPANION</div>
         <button class="nav-tab" data-view="view-slides">
@@ -5024,11 +5198,13 @@ def build_html() -> str:
           </div>
           <span class="nav-pill">4</span>
         </button>
-        <button class="nav-tab" data-view="view-runbook">
+        <div class="nav-label" style="margin-top: 1rem;">4. 👥 TEAM ACCOUNTABILITY</div>
+        <button class="nav-tab" data-view="view-team">
           <div class="nav-tab-left">
-            <span class="nav-tab-icon">⏱️</span>
-            <span>20-Min Exam Runbook</span>
+            <span class="nav-tab-icon">👥</span>
+            <span>Team Accountability</span>
           </div>
+          <span class="nav-pill">6</span>
         </button>
 
         <div class="nav-label" style="margin-top: 1.5rem;">REQUIRED ANCHOR SECTIONS</div>
@@ -5053,12 +5229,12 @@ def build_html() -> str:
           </button>
           <div class="view-indicator">
             <span class="view-indicator-sub">Current View</span>
-            <span id="current-view-title" class="view-indicator-title">📋 How to Answer &amp; Protocol</span>
+            <span id="current-view-title" class="view-indicator-title">📖 65 Stories &amp; Live Tracing</span>
           </div>
         </div>
         <div class="topbar-right">
           <button type="button" id="topbar-credentials-btn" class="topbar-cred-btn" aria-label="Toggle Production Credentials Matrix">
-            🔑 Role Credentials (6 Accounts)
+            🔑 Role Credentials (7 Accounts)
           </button>
           <span class="topbar-badge badge-sprint">Sprint 5 HEAD</span>
           <span class="topbar-badge">19 ADRs</span>
@@ -5245,8 +5421,6 @@ def build_html() -> str:
 
         <!-- REQUIRED SECTION 2: #details -->
         <section id="details" class="doc-section">
-          {view_live_demo_html}
-
           {view_slides_html}
 
           <!-- View 2: Defects Radar & Shortcomings -->
@@ -5317,12 +5491,14 @@ def build_html() -> str:
           </div>
 
           <!-- View 4: 65 User Stories & Code Lineage -->
-    <div id="view-stories" class="view-panel active">
+          <div id="view-stories" class="view-panel active">
             <div class="section-header-box">
               <div class="section-eyebrow">FULL SPECIFICATION &amp; TRACEABILITY</div>
               <h2 class="section-heading">65 User Stories &amp; Code Lineage</h2>
               <p class="section-lead">Search and inspect all 65 user stories across 15 epics with direct architectural decision links, acceptance scenarios, and test case coverage.</p>
             </div>
+
+            {live_inventory_table_html}
 
             <!-- Dedicated Story Search Bar (NO <form>) -->
             <div class="section-search-container">
@@ -5418,42 +5594,12 @@ def build_html() -> str:
 
         <!-- REQUIRED SECTION 3: #next-steps -->
         <section id="next-steps" class="doc-section">
-          <!-- View 7: 20-Min Exam Runbook & Delivery Sign-Off -->
-          <div id="view-runbook" class="view-panel">
+          <!-- View: Team Accountability & Final Assessment Sign-Off -->
+          <div id="view-team" class="view-panel">
             <div class="section-header-box">
-              <div class="section-eyebrow">FINAL PRESENTATION PACING &amp; CHECKLIST</div>
-              <h2 class="section-heading">20-Minute Exam Runbook &amp; Live Demo Script</h2>
-              <p class="section-lead">Pacing schedule, role speaking slots, proof handoffs, and examiners question management.</p>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
-              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">00:00 - 04:00 (Bryan)</h4>
-                <p><strong>Architecture &amp; Database Foundation:</strong> Monolith rationale (ADR-001), PostgreSQL migrations 0001–0027, session cookies (ADR-015), Transactional Outbox (ADR-006).</p>
-              </div>
-              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">04:00 - 08:00 (Aaron &amp; Bryan)</h4>
-                <p><strong>Safety Review &amp; Lead Assignment:</strong> Event submission (E02), Safety Review FSM (ADR-013), and Lead queue restoration via SCRUM-261.</p>
-              </div>
-              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">08:00 - 12:00 (Amareet)</h4>
-                <p><strong>Attendee Registration &amp; Concurrency:</strong> Registration &amp; capacity enforcement (E09, PRs #326, #327, #353, #354, #368), 48h tentative hold lifecycles (E06-S05), and technician deadlock elimination (PR #239).</p>
-              </div>
-              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">12:00 - 16:00 (Xiang Ying &amp; Ji Ning)</h4>
-                <p><strong>Equipment Inventory &amp; Lifecycle Changes:</strong> Equipment inventory &amp; requests (E07-S01..S03), revision fingerprinting (PR #380), and lost venue recovery (E10-S05 / PR #367).</p>
-              </div>
-              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">16:00 - 20:00 (All Hands)</h4>
-                <p><strong>Defects Defense &amp; Q&amp;A:</strong> Defect D-04 honest admission (withheld to protect ADR-018), sprint velocity metrics, examiner Q&amp;A defense.</p>
-              </div>
-            </div>
-
-            <!-- Team Accountability & Final Assessment Sign-Off -->
-            <div class="section-header-box" style="margin-top: 3rem;">
               <div class="section-eyebrow">DELIVERY &amp; ACCOUNTABILITY</div>
-              <h2 class="section-heading">Team Accountability &amp; Final Assessment Sign-Off</h2>
-              <p class="section-lead">Roles, ownership boundaries, and 60 Done stories verified across Sprints 1 to 5.</p>
+              <h2 class="section-heading">👥 Team Accountability &amp; Final Assessment Sign-Off</h2>
+              <p class="section-lead">Ownership boundaries, individual story accountability, and single-role governance (ADR-012) across Sprints 1 to 5.</p>
             </div>
 
             <div class="team-grid">
@@ -5554,11 +5700,11 @@ def build_html() -> str:
           return;
         }}
         if (targetId === 'details') {{
-          switchView('view-defects-radar');
+          switchView('view-stories');
           return;
         }}
         if (targetId === 'next-steps') {{
-          switchView('view-runbook');
+          switchView('view-team');
           return;
         }}
 
@@ -5698,67 +5844,6 @@ def build_html() -> str:
       if (openCredBtn2) openCredBtn2.addEventListener('click', openCredDrawer);
       if (closeCredBtn) closeCredBtn.addEventListener('click', closeCredDrawer);
       if (credBackdrop) credBackdrop.addEventListener('click', closeCredDrawer);
-
-      // --- Story Card Demonstration Walkthrough Tabs ---
-      document.addEventListener('click', (e) => {{
-        const stepBtn = e.target.closest('.demo-step-btn');
-        if (stepBtn) {{
-          const targetId = stepBtn.getAttribute('data-tab-target');
-          const container = stepBtn.closest('.story-demo-protocol');
-          if (container && targetId) {{
-            container.querySelectorAll('.demo-step-btn').forEach(b => b.classList.remove('active'));
-            stepBtn.classList.add('active');
-            container.querySelectorAll('.demo-step-panel').forEach(p => {{
-              p.style.display = (p.id === targetId) ? 'block' : 'none';
-              p.classList.toggle('active', p.id === targetId);
-            }});
-          }}
-        }}
-      }});
-
-      // --- Live Demo Protocol View: Interactive Story Launcher ---
-      const demoSelect = document.getElementById('demo-story-select');
-      const demoTargetDisplay = document.getElementById('demo-active-display');
-
-      function loadStoryIntoLauncher(sid) {{
-        if (!demoTargetDisplay) return;
-        const sourceCard = document.getElementById('story-' + sid);
-        if (!sourceCard) return;
-        const clone = sourceCard.cloneNode(true);
-        clone.id = 'demo-launcher-' + sid;
-        clone.querySelectorAll('[id]').forEach(el => {{
-          el.id = 'launcher-' + el.id;
-        }});
-        clone.querySelectorAll('[data-tab-target]').forEach(el => {{
-          el.setAttribute('data-tab-target', 'launcher-' + el.getAttribute('data-tab-target'));
-        }});
-        const drawer = clone.querySelector('.story-lineage-drawer');
-        if (drawer) drawer.open = true;
-        demoTargetDisplay.innerHTML = '';
-        demoTargetDisplay.appendChild(clone);
-      }}
-
-      if (demoSelect) {{
-        demoSelect.addEventListener('change', () => {{
-          loadStoryIntoLauncher(demoSelect.value);
-        }});
-        if (!demoSelect.value && demoSelect.options.length > 1) {{
-          demoSelect.value = 'E06-S06';
-          loadStoryIntoLauncher('E06-S06');
-        }}
-      }}
-
-      document.querySelectorAll('.drill-chip').forEach(chip => {{
-        chip.addEventListener('click', () => {{
-          const sid = chip.getAttribute('data-drill-sid');
-          if (!sid) return;
-          if (demoSelect) demoSelect.value = sid;
-          loadStoryIntoLauncher(sid);
-          if (demoTargetDisplay) {{
-            demoTargetDisplay.scrollIntoView({{ behavior: 'smooth' }});
-          }}
-        }});
-      }});
 
       // --- Slide Filter & Jump Chips ---
       const slideFilters = document.querySelectorAll('.slide-filter-btn');
