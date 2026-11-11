@@ -58,11 +58,18 @@ async function main() {
       JOIN venues v ON v.id=b.venue_id WHERE e.id=$1 AND e.status='confirmed'
       ON CONFLICT(event_id) DO UPDATE SET name=excluded.name, starts_at=excluded.starts_at, ends_at=excluded.ends_at,
         venue_name=excluded.venue_name, venue_location=excluded.venue_location, published_at=now()`, [EVENT_ID]);
-    const verification = await client.query(`SELECT e.status::text, e.registration_enabled, p.event_id, count(s.id)::int AS sessions
+    const verification = await client.query(`SELECT e.status::text, e.registration_enabled, p.event_id,
+      count(DISTINCT s.id)::int AS sessions, e.expected_attendance,
+      count(DISTINCT r.id) FILTER (WHERE r.status NOT IN ('withdrawn','rejected'))::int AS registrations,
+      bool_or(ra.id IS NOT NULL) FILTER (WHERE ra.status NOT IN ('withdrawn','rejected')) AS attendee_registered
       FROM events e JOIN event_publications p ON p.event_id=e.id LEFT JOIN sessions s ON s.event_id=e.id
-      WHERE e.id=$1 GROUP BY e.id,p.event_id`, [EVENT_ID]);
-    const row = verification.rows[0] as { status: string; registration_enabled: boolean; event_id: string; sessions: number } | undefined;
-    if (!row || row.status !== 'confirmed' || !row.registration_enabled || row.sessions < 1) throw new Error('Publication is not discoverable and registerable for the attendee.');
+      LEFT JOIN event_registrations r ON r.event_id=e.id LEFT JOIN event_registrations ra ON ra.event_id=e.id AND ra.attendee_id=$2
+      WHERE e.id=$1 GROUP BY e.id,p.event_id`, [EVENT_ID, attendee.id]);
+    const row = verification.rows[0] as { status: string; registration_enabled: boolean; event_id: string; sessions: number; expected_attendance: number; registrations: number; attendee_registered: boolean | null } | undefined;
+    if (!row || row.status !== 'confirmed' || !row.registration_enabled || row.sessions < 1
+      || row.registrations >= row.expected_attendance || row.attendee_registered) {
+      throw new Error('Publication is not discoverable and registerable for the attendee.');
+    }
     await client.query('COMMIT');
     console.log(`PASS: ${ATTENDEE_EMAIL} can discover confirmed published event ${row.event_id} and select ${row.sessions} session(s) to register.`);
   } catch (error) {
