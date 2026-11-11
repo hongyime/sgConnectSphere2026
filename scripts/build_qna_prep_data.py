@@ -1740,7 +1740,9 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
     live_target_url = f"{APP_URL}{start_path}"
 
     jira_key = s.get("jira_key", "SCRUM-00")
-    jira_url = f"{JIRA_BASE_URL}/{jira_key}"
+    jira_keys = re.findall(r"SCRUM-\d+", jira_key) or [jira_key]
+    jira_url = f"{JIRA_BASE_URL}/{jira_keys[0]}"
+    jira_links_html = " ".join(f'<a href="{JIRA_BASE_URL}/{key}" target="_blank" rel="noopener" class="jira-pill">{key}</a>' for key in jira_keys)
     jira_receipt = f"Accepted by PO Bryan Seah; Acceptance criteria verified in sprint review sign-off ({s.get('sprint', 'Sprint 4')})."
     ac_scenarios = s.get("scenarios", [])
     if ac_scenarios:
@@ -1749,10 +1751,16 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
         ac_summary_text = f"Full Given-When-Then criteria satisfied per {jira_key} specification in release-1 backlog."
 
     evidence_pr_raw = s.get("evidence_pr", "")
-    pr_m = re.search(r"PR #?(\d+)", evidence_pr_raw)
-    pr_num = pr_m.group(1) if pr_m else "440"
+    pr_nums = re.findall(r"PR #?(\d+)", evidence_pr_raw) or ["440"]
+    pr_num = pr_nums[0]
     pr_url = f"{GITHUB_REPO_URL}/pull/{pr_num}"
     ci_workflow_url = f"{GITHUB_REPO_URL}/pull/{pr_num}/checks"
+    pr_links_html = " ".join(f'<a href="{GITHUB_REPO_URL}/pull/{number}" target="_blank" rel="noopener" class="ev-link">🔀 Pull Request #{number}</a>' for number in pr_nums)
+    ci_links_html = " ".join(f'<a href="{GITHUB_REPO_URL}/pull/{number}/checks" target="_blank" rel="noopener" class="ev-link">⚙️ PR #{number} checks</a>' for number in pr_nums)
+    source_links_html = " ".join(
+        f'<a href="{GITHUB_REPO_URL}/blob/main/{path.strip()}" target="_blank" rel="noopener" class="ev-link">💻 {html.escape(path.strip())} at HEAD</a>'
+        for path in re.split(r"[,;]", s["code_link"]) if path.strip()
+    )
 
     tc_ids = [c["tc_id"] for c in cases]
     ep_valid, ep_invalid, bva, real_db = get_test_design_details(sid, epic, s)
@@ -1782,11 +1790,15 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
         "click_path": click_path,
         "jira_key": jira_key,
         "jira_url": jira_url,
+        "jira_links_html": jira_links_html,
         "jira_receipt": jira_receipt,
         "ac_summary_text": ac_summary_text,
         "pr_num": pr_num,
         "pr_url": pr_url,
+        "pr_links_html": pr_links_html,
         "ci_workflow_url": ci_workflow_url,
+        "ci_links_html": ci_links_html,
+        "source_links_html": source_links_html,
         "commit_sha": commit_sha,
         "author": author,
         "reviewer": reviewer,
@@ -2210,7 +2222,7 @@ def build_html() -> str:
             <div class="demo-step-panel" id="demo-p2-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Jira SCRUM Issue:</span>
-                <a href="{demo_meta['jira_url']}" target="_blank" rel="noopener" class="jira-pill">{s['jira_key']}</a>
+                {demo_meta['jira_links_html']}
                 <span class="badge badge-sprint">{s['sprint']}</span>
                 <span class="badge badge-points">{s['points']} pts</span>
               </div>
@@ -2228,15 +2240,14 @@ def build_html() -> str:
             <div class="demo-step-panel" id="demo-p3-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Pull Request:</span>
-                <a href="{demo_meta['pr_url']}" target="_blank" rel="noopener" class="ev-link">🔀 Pull Request #{demo_meta['pr_num']}</a>
+                {demo_meta['pr_links_html']}
                 <span class="badge badge-owner">Author: {html.escape(demo_meta['author'])}</span>
                 <span class="badge badge-reviewer" style="background:#5856d6; color:#fff;">Reviewer: {html.escape(demo_meta['reviewer'])}</span>
                 <span class="badge badge-tc">Commit: <code>{demo_meta['commit_sha']}</code></span>
               </div>
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Source Controller:</span>
-                <code>{html.escape(s['code_link'])}</code>
-                <a href="{GITHUB_REPO_URL}/blob/main/{s['code_link']}" target="_blank" rel="noopener" class="ev-link">💻 View at HEAD</a>
+                {demo_meta['source_links_html']}
               </div>
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Database Migration:</span>
@@ -2248,7 +2259,7 @@ def build_html() -> str:
             <div class="demo-step-panel" id="demo-p4-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">GitHub Actions CI:</span>
-                <a href="{demo_meta['ci_workflow_url']}" target="_blank" rel="noopener" class="ev-link">⚙️ GitHub Actions CI Run (PR #{demo_meta['pr_num']})</a>
+                {demo_meta['ci_links_html']}
                 <span class="badge badge-status">All Required Checks Passed</span>
               </div>
               <div class="ci-checks-list">
